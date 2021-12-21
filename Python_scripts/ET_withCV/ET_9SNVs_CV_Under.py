@@ -42,9 +42,15 @@ outDir = option_dict['outputDir']
 #########################################################################
 ###############Load and data in UKB######################################
 
-df = pd.read_csv(inMtrx, sep="\t")
+df_all = pd.read_csv(inMtrx, sep="\t")
 #df.head()
-print(df.shape)#(370, 102)
+print(df_all.shape)#(370, 102)
+
+#Select only APOE variants
+Var_TreeSelect=["rs429358","rs769449", "rs4420638","rs405509", 
+                "rs1160985", "rs7412","rs157590","rs157580","rs405697"]
+df=df_all[Var_TreeSelect]
+print(df.shape)#(370, 9)
 
 labels = pd.read_csv(inLab, sep="\t")
 #labels.head()
@@ -68,7 +74,7 @@ np.random.seed(21)
 #Use all the dataset as input and balance in the function
 #Make the subset of feature predictors
 X=df.to_numpy()
-print(X.shape)#(75738, 145)
+print(X.shape)#(370, 6)
 #Get the training and test sets
 con1=labels.iloc[:,1]
 y=np.where(con1=='AD', 1, con1)
@@ -77,8 +83,8 @@ y=y.astype('int')
 X, y = shuffle(X, y, random_state=1)
 
 X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, random_state=1)
-print ('Train set:', X_train.shape,  y_train.shape)#Train set: (296, 102) (296,)
-print ('Test set:', X_test.shape,  y_test.shape)#Test set: (74, 102) (74,)
+print ('Train set:', X_train.shape,  y_train.shape)#Train set: (296, 9) (296,)
+print ('Test set:', X_test.shape,  y_test.shape)#Test set: (74, 9) (74,)
 
 # define the model with default hyperparameters
 model=ExtraTreesClassifier()
@@ -155,7 +161,7 @@ fscore_df['ValMean']  = fscore_val_mean
 fscore_df['ValStd']  = fscore_val_std
 fscore_df['TrainMean']  = fscore_train_mean
 fscore_df['TrainStd']  = fscore_train_std
-fscore_df.to_csv(os.path.join(outDir, 'ET.DisGeNet.fscore.ADNI.CV.txt'), index=None, sep='\t')
+fscore_df.to_csv(os.path.join(outDir, 'ET.9SNVs.fscore.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(fscore_val_mean)
@@ -191,7 +197,7 @@ roc_df['ValMean']  = roc_val_mean
 roc_df['ValStd']  = roc_val_std
 roc_df['TrainMean']  = roc_train_mean
 roc_df['TrainStd']  = roc_train_std
-roc_df.to_csv(os.path.join(outDir, 'ET.DisGeNet.roc.ADNI.CV.txt'), index=None, sep='\t')
+roc_df.to_csv(os.path.join(outDir, 'ET.9SNVs.roc.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(roc_val_mean)
