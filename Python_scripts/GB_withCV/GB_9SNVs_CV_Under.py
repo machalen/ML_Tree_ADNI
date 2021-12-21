@@ -1,5 +1,5 @@
 #Magda Arnal
-#19/05/2021
+#03/12/2021
 
 import numpy as np
 import pandas as pd
@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from sklearn.utils import shuffle
 from Sampling_Function import Cross_Val_Groups
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 #import getopt
 from optparse import OptionParser
@@ -48,9 +48,10 @@ df_all = pd.read_csv(inMtrx, sep="\t")
 print(df_all.shape)#(370, 102)
 
 #Select only APOE variants
-Var_TreeSelect=["rs429358","rs769449", "rs4420638","rs405509", "rs1160985", "rs7412"]
+Var_TreeSelect=["rs429358","rs769449", "rs4420638","rs405509", 
+                "rs1160985", "rs7412","rs157590","rs157580","rs405697"]
 df=df_all[Var_TreeSelect]
-print(df.shape)#(370, 6)
+print(df.shape)#(370, 9)
 
 labels = pd.read_csv(inLab, sep="\t")
 #labels.head()
@@ -68,13 +69,13 @@ print(len(casei))#164
 print(len(cntrli))#206
 
 ###############################################################################
-#####################Get the best parameters in RF#############################
+#####################Get the best parameters in GB#############################
 np.random.seed(21)
 
 #Use all the dataset as input and balance in the function
 #Make the subset of feature predictors
 X=df.to_numpy()
-print(X.shape)#(370, 6)
+print(X.shape)#(370, 9)
 #Get the training and test sets
 con1=labels.iloc[:,1]
 y=np.where(con1=='AD', 1, con1)
@@ -83,24 +84,26 @@ y=y.astype('int')
 X, y = shuffle(X, y, random_state=1)
 
 X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, random_state=1)
-print ('Train set:', X_train.shape,  y_train.shape)#Train set: (296, 6) (296,)
-print ('Test set:', X_test.shape,  y_test.shape)#Test set: (74, 6) (74,)
+print ('Train set:', X_train.shape,  y_train.shape)#Train set: (296, 9) (296,)
+print ('Test set:', X_test.shape,  y_test.shape)#Test set: (74, 9) (74,)
 
 # define the model with default hyperparameters
-model=RandomForestClassifier()
+model = GradientBoostingClassifier()
 
 # define the grid of values to search
 grid = dict()
-grid['n_estimators'] = [50, 60, 70, 80, 100]
-grid['min_samples_split'] = [2, 5, 8]
-grid['min_samples_leaf'] = [1, 2, 5]
-grid['max_depth'] = [3, 7, 9, None]
+grid['n_estimators'] =  [70,80,90,100]
+grid['learning_rate'] = [0.0001, 0.001, 0.01, 0.1, 1.0]
+grid['subsample'] = [0.5, 0.7, 1.0]
+grid['max_depth'] = [7, 9, 10, 12, 14]
+grid['loss']=['deviance', 'exponential']
 
 # grid = dict()
-# grid['n_estimators'] = [50, 60]
-# grid['min_samples_split'] = [2, 5]
-# grid['min_samples_leaf'] = [5]
-# grid['max_depth'] = [9, None]
+# grid['n_estimators'] = [90,100]
+# grid['learning_rate'] = [0.0001, 0.001]
+# grid['subsample'] = [0.7]
+# grid['max_depth'] = [12]
+# grid['loss']=['deviance', 'exponential']
 
 # unique, counts = np.unique(y_test, return_counts=True)
 # print('Counts after train test:',np.asarray((unique, counts)).T)
@@ -119,19 +122,22 @@ np.random.seed(1)
 for e in range(len(grid[keys_list[0]])):
     ne=grid[keys_list[0]][e]
     for l in range(len(grid[keys_list[1]])):
-        ms=grid[keys_list[1]][l]
+        lr=grid[keys_list[1]][l]
         for s in range(len(grid[keys_list[2]])):
-            ml=grid[keys_list[2]][s]
+            sb=grid[keys_list[2]][s]
             for m in range(len(grid[keys_list[3]])):
                 md=grid[keys_list[3]][m]
-                #print the combinations
-                print(ne,ms,ml,md)
-                c=(ne,ms,ml,md)
-                combination = {'n_estimators':ne,
-                               'min_samples_split':ms,
-                               'min_samples_leaf':ml,
-                               'max_depth': md}
-                metrics_fscore_Under[c], metrics_roc_Under[c] = Cross_Val_Groups(model, X_train, y_train, combination, n_splits = 10, balance = 'under')
+                for s in range(len(grid[keys_list[4]])):
+                    lo=grid[keys_list[4]][s]
+                    #print the combinations
+                    print(ne,lr,sb,md,lo)
+                    c=(ne,lr,sb,md,lo)
+                    combination = {'n_estimators':ne,
+                                   'learning_rate':lr,
+                                   'subsample':sb,
+                                   'max_depth': md,
+                                   'loss':lo}
+                    metrics_fscore_Under[c], metrics_roc_Under[c] = Cross_Val_Groups(model, X_train, y_train, combination, n_splits = 10, balance = 'under')
 
 now2 = datetime.now()
 print(now2-now1)
@@ -161,7 +167,7 @@ fscore_df['ValMean']  = fscore_val_mean
 fscore_df['ValStd']  = fscore_val_std
 fscore_df['TrainMean']  = fscore_train_mean
 fscore_df['TrainStd']  = fscore_train_std
-fscore_df.to_csv(os.path.join(outDir, 'RF.6SNVs.fscore.ADNI.CV.txt'), index=None, sep='\t')
+fscore_df.to_csv(os.path.join(outDir, 'GB.9SNVs.fscore.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(fscore_val_mean)
@@ -197,7 +203,7 @@ roc_df['ValMean']  = roc_val_mean
 roc_df['ValStd']  = roc_val_std
 roc_df['TrainMean']  = roc_train_mean
 roc_df['TrainStd']  = roc_train_std
-roc_df.to_csv(os.path.join(outDir, 'RF.6SNVs.roc.ADNI.CV.txt'), index=None, sep='\t')
+roc_df.to_csv(os.path.join(outDir, 'GB.9SNVs.roc.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(roc_val_mean)
@@ -209,6 +215,4 @@ min_value = min(roc_val_std)
 min_index = roc_val_std.index(min_value)
 #keys_list[min_index]
 print('Best ROC AUC std {} is with {}'.format(min_value.round(4), keys_list[min_index]))
-
-
 

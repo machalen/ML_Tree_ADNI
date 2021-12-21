@@ -45,11 +45,11 @@ outDir = option_dict['outputDir']
 
 df = pd.read_csv(inMtrx, sep="\t")
 #df.head()
-print(df.shape)#(75738, 145)
+print(df.shape)#(370, 102)
 
 labels = pd.read_csv(inLab, sep="\t")
 #labels.head()
-print(labels.shape)#(75738, 3)
+print(labels.shape)#(370, 3)
 
 #########################################################################
 ######################PreProcess UKB data################################
@@ -59,8 +59,8 @@ print(labels.shape)#(75738, 3)
 rows = labels.Cond.values
 casei = np.where(rows=='AD')[0]
 cntrli  = np.where(rows=='Control')[0]
-print(len(casei))#738
-print(len(cntrli))#75000
+print(len(casei))#164
+print(len(cntrli))#206
 
 ###############################################################################
 #####################Get the best parameters in RF#############################
@@ -69,7 +69,7 @@ np.random.seed(21)
 #Use all the dataset as input and balance in the function
 #Make the subset of feature predictors
 X=df.to_numpy()
-print(X.shape)#(75738, 145)
+print(X.shape)#(370, 102)
 #Get the training and test sets
 con1=labels.iloc[:,1]
 y=np.where(con1=='AD', 1, con1)
@@ -78,8 +78,8 @@ y=y.astype('int')
 X, y = shuffle(X, y, random_state=1)
 
 X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.2, random_state=1)
-print ('Train set:', X_train.shape,  y_train.shape)#Train set: (1388, 48) (1388, 3)
-print ('Test set:', X_test.shape,  y_test.shape)#Test set: (596, 48) (596, 3)
+print ('Train set:', X_train.shape,  y_train.shape)#Train set: (296, 102) (296,)
+print ('Test set:', X_test.shape,  y_test.shape)#Test set: (74, 102) (74,)
 
 # define the model with default hyperparameters
 model=RandomForestClassifier()
@@ -156,7 +156,7 @@ fscore_df['ValMean']  = fscore_val_mean
 fscore_df['ValStd']  = fscore_val_std
 fscore_df['TrainMean']  = fscore_train_mean
 fscore_df['TrainStd']  = fscore_train_std
-fscore_df.to_csv(os.path.join(outDir, 'RF.DisGeNet.fscore.Under.CV.txt'), index=None, sep='\t')
+fscore_df.to_csv(os.path.join(outDir, 'RF.DisGeNet.fscore.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(fscore_val_mean)
@@ -192,7 +192,7 @@ roc_df['ValMean']  = roc_val_mean
 roc_df['ValStd']  = roc_val_std
 roc_df['TrainMean']  = roc_train_mean
 roc_df['TrainStd']  = roc_train_std
-roc_df.to_csv(os.path.join(outDir, 'RF.DisGeNet.roc.Under.CV.txt'), index=None, sep='\t')
+roc_df.to_csv(os.path.join(outDir, 'RF.DisGeNet.roc.ADNI.CV.txt'), index=None, sep='\t')
 
 #Check the best metrics
 max_value = max(roc_val_mean)
