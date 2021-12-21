@@ -1,2 +1,2 @@
-##Make machine learning models to use with ADNI dataset
+## Machine learning models to use with WGS data from ADNI dataset
 
